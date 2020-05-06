@@ -1,0 +1,3 @@
+# property 대신 yaml 파일로 변경하여 사용해보자.
+server:
+  port:8888
