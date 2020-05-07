@@ -118,4 +118,29 @@ public class UserController {
         return mapping;
 
     }
+
+    @PostMapping("/users")
+    public MappingJacksonValue createUser(@RequestBody User createuser) {
+
+        User user = service.create(createuser);
+        List<User> list = service.getUserList();
+
+//        user.setId(createuser.getId());
+//        user.setName(createuser.getName());
+        user.setJoinDate(createuser.getJoinDate());
+//        user.setPassword(createuser.getPassword());
+//        user.setSsn(createuser.getSsn());
+
+        EntityModel<User> model = new EntityModel<>(user);
+        WebMvcLinkBuilder linkTO = linkTo(methodOn(this.getClass()).getUser(user.getId()));
+        model.add(linkTO.withRel("user-datail"));
+        list.add(user);
+
+        SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "joinDate", "ssn");
+        FilterProvider provider = new SimpleFilterProvider().addFilter("UserInfo", filter);
+        MappingJacksonValue mapping = new MappingJacksonValue(list);
+        mapping.setFilters(provider);
+
+        return mapping;
+    }
 }
