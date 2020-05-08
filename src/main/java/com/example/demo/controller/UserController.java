@@ -12,9 +12,13 @@ import org.springframework.hateoas.EntityModel;
 //import org.springframework.hateoas.Resource;
 //import org.springframework.hateoas.mvc.ControllerLinkBuilder;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import javax.validation.Valid;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -120,27 +124,86 @@ public class UserController {
     }
 
     @PostMapping("/users")
-    public MappingJacksonValue createUser(@RequestBody User createuser) {
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
+        User createUser = service.createUser(user);
 
-        User user = service.create(createuser);
-        List<User> list = service.getUserList();
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("{id}")
+                .buildAndExpand(createUser.getId())
+                .toUri();
+        return ResponseEntity.created(location).build();
+    }
 
-//        user.setId(createuser.getId());
-//        user.setName(createuser.getName());
-        user.setJoinDate(createuser.getJoinDate());
-//        user.setPassword(createuser.getPassword());
-//        user.setSsn(createuser.getSsn());
 
-        EntityModel<User> model = new EntityModel<>(user);
-        WebMvcLinkBuilder linkTO = linkTo(methodOn(this.getClass()).getUser(user.getId()));
-        model.add(linkTO.withRel("user-datail"));
-        list.add(user);
+    @PutMapping("/users/{id}")
+    public MappingJacksonValue modifyUser(@PathVariable Integer id, @RequestBody User modifyuser) {
+
+        modifyuser.setId(id);
+        User modifyUser = service.modifyUser(modifyuser);
+
+        if(modifyUser == null) {
+            throw new UserNotFoundException("id-" + id);
+        }
+
+        EntityModel<User> model = new EntityModel<>(modifyuser);
+        WebMvcLinkBuilder linkTO = linkTo(methodOn(this.getClass()).getUserList());
+
+        model.add(linkTO.withRel("all-users"));
 
         SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "joinDate", "ssn");
         FilterProvider provider = new SimpleFilterProvider().addFilter("UserInfo", filter);
-        MappingJacksonValue mapping = new MappingJacksonValue(list);
+        MappingJacksonValue mapping = new MappingJacksonValue(model);
         mapping.setFilters(provider);
 
         return mapping;
+
     }
+
+    @DeleteMapping("/users/{id}")
+    public MappingJacksonValue removeUser(@PathVariable Integer id) {
+        User user = service.removeUser(id);
+
+        EntityModel<User> model = new EntityModel<>(user);
+        WebMvcLinkBuilder linkTO = linkTo(methodOn(this.getClass()).getUserList());
+
+        model.add(linkTO.withRel("all-users"));
+
+        SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "joinDate", "ssn");
+        FilterProvider provider = new SimpleFilterProvider().addFilter("UserInfo", filter);
+
+        MappingJacksonValue mapping = new MappingJacksonValue(model);
+        mapping.setFilters(provider);
+
+        return mapping;
+
+    }
+
+
+
+
+//    @PostMapping("/users")
+//    public MappingJacksonValue createUser(@RequestBody User createuser) {
+//
+//        User user = service.create(createuser);
+//        List<User> list = service.getUserList();
+//
+////        user.setId(createuser.getId());
+////        user.setName(createuser.getName());
+//        user.setJoinDate(createuser.getJoinDate());
+////        user.setPassword(createuser.getPassword());
+////        user.setSsn(createuser.getSsn());
+//
+//        EntityModel<User> model = new EntityModel<>(user);
+//        WebMvcLinkBuilder linkTO = linkTo(methodOn(this.getClass()).getUser(user.getId()));
+//        model.add(linkTO.withRel("user-datail"));
+//        list.add(user);
+//
+//        SimpleBeanPropertyFilter filter = SimpleBeanPropertyFilter.filterOutAllExcept("id", "name", "joinDate", "ssn");
+//        FilterProvider provider = new SimpleFilterProvider().addFilter("UserInfo", filter);
+//        MappingJacksonValue mapping = new MappingJacksonValue(list);
+//        mapping.setFilters(provider);
+//
+//        return mapping;
+//    }
 }
